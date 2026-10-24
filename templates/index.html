@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}首页 - 校园推荐系统{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-4 fw-bold text-primary mb-4">欢迎来到校园推荐系统</h1>
+    <p class="lead text-muted mb-4">在这里发现你的校园好物、好友与好去处</p>
+
+    {% if current_user %}
+        <div class="alert alert-success d-inline-block px-4">
+            已登录：<strong>{{ current_user.nickname }}</strong>，当前角色：{{ current_user.role }}
+        </div>
+        <div class="mt-4">
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">退出登录</a>
+        </div>
+    {% else %}
+        <div class="mt-4">
+            <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg me-2">登录</a>
+            <a href="{{ url_for('register') }}" class="btn btn-outline-primary btn-lg">注册</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
