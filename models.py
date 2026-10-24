@@ -50,26 +50,26 @@ class Place(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(100), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
+    scope = db.Column(db.String(20), nullable=False)  # campus / nearby / city
+    address = db.Column(db.String(255), nullable=True)
     description = db.Column(db.Text, nullable=False)
     reason = db.Column(db.Text, nullable=False)
-    address = db.Column(db.String(255), nullable=True)
-    cover_image = db.Column(db.String(255), nullable=True)
-    view_count = db.Column(db.Integer, default=0)
+    cover_image_url = db.Column(db.String(255), nullable=True)  # 刚才AI叫你用cover_image_url，用这个
+    cost_level = db.Column(db.String(20), nullable=True)  # free / low / medium / high
+    duration_level = db.Column(db.String(20), nullable=True)  # lt30m / about1h / 1to3h / halfday
+    tags = db.Column(db.String(255), nullable=True)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='pending')  # pending / approved / rejected / offline
+    is_deleted = db.Column(db.Integer, nullable=False, default=0)
     like_count = db.Column(db.Integer, default=0)
     favorite_count = db.Column(db.Integer, default=0)
-    status = db.Column(db.String(20), nullable=False, default='pending')  # pending / approved / rejected
-    is_deleted = db.Column(db.Integer, nullable=False, default=0)  # 0未删除 1已删除
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    heat_score = db.Column(db.Integer, default=0)
+    published_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    comments = db.relationship('Comment', backref='place', lazy='dynamic', cascade='all, delete-orphan')
-    likes = db.relationship('Like', backref='place', lazy='dynamic', cascade='all, delete-orphan')
-    favorites = db.relationship('Favorite', backref='place', lazy='dynamic', cascade='all, delete-orphan')
-
     def __repr__(self):
         return f'<Place {self.name}>'
-
 
 class Comment(db.Model):
     __tablename__ = 'comments'

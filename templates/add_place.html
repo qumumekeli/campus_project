@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}添加推荐 - 校园推荐系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">推荐一个新地点</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">地点名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">分类 <span class="text-danger">*</span></label>
+                            <select class="form-select" name="category_id" required>
+                                <option value="">请选择分类</option>
+                                {% for c in categories %}
+                                <option value="{{ c.id }}">{{ c.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">范围 <span class="text-danger">*</span></label>
+                            <select class="form-select" name="scope" required>
+                                <option value="campus">校内</option>
+                                <option value="nearby">周边</option>
+                                <option value="city">全市</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">具体地址 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="address" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">客观描述 <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="description" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">推荐理由 <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="reason" rows="3" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">消费水平</label>
+                            <select class="form-select" name="cost_level">
+                                <option value="free">免费</option>
+                                <option value="low">低</option>
+                                <option value="medium">中</option>
+                                <option value="high">高</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">适合时长</label>
+                            <select class="form-select" name="duration_level">
+                                <option value="lt30m">30分钟内</option>
+                                <option value="about1h">约1小时</option>
+                                <option value="1to3h">1-3小时</option>
+                                <option value="halfday">半天以上</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">标签（用逗号分隔，最多5个）</label>
+                        <input type="text" class="form-control" name="tags">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">封面图（jpg/png/webp，不超过5MB）</label>
+                        <input type="file" class="form-control" name="cover_image" accept=".jpg,.jpeg,.png,.webp">
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">提交推荐</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
