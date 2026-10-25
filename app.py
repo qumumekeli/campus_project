@@ -1,21 +1,13 @@
-from datetime import datetime
 import os
 import uuid
+from datetime import datetime
 from functools import wraps
-
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from config import Config
-from models import db, User, Category, Place
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if session.get('role') != 'admin':
-            flash('你没有权限访问该页面', 'danger')
-            return redirect(url_for('index'))
-        return f(*args, **kwargs)
-    return decorated_function
+from models import db, User, Category, Place, Like, Favorite
+
 app = Flask(__name__)
 app.config.from_object(Config)
 
@@ -23,8 +15,6 @@ app.config.from_object(Config)
 app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
-
-# 确保上传目录存在
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
@@ -33,22 +23,40 @@ db.init_app(app)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def login_required(view_func):
-    @wraps(view_func)
-    def wrapped(*args, **kwargs):
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
         if 'user_id' not in session:
             flash('请先登录', 'warning')
             return redirect(url_for('login'))
-        return view_func(*args, **kwargs)
-    return wrapped
+        return f(*args, **kwargs)
+    return decorated
 
-# 首页
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if session.get('role') != 'admin':
+            flash('你没有权限访问该页面', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated
+
+@app.context_processor
+def inject_user():
+    return dict(current_user={
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'nickname': session.get('nickname'),
+        'role': session.get('role')
+    } if session.get('user_id') else None)
+
+# ==================== 首页 ====================
 @app.route('/')
 def index():
-    places = Place.query.filter_by(status='approved').all()
+    places = Place.query.filter_by(status='approved').order_by(Place.id.desc()).all()
     return render_template('index.html', places=places)
 
-# 注册
+# ==================== 登录注册 ====================
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -60,37 +68,23 @@ def register():
         if not username or not password or not nickname or not cohort:
             flash('所有字段均为必填项', 'danger')
             return redirect(url_for('register'))
-
         if User.query.filter_by(username=username).first():
             flash('用户名已存在', 'danger')
             return redirect(url_for('register'))
 
-        # 修正 1：使用正确的字段名和加密方式
-        user = User(
-            username=username, 
-            password_hash=generate_password_hash(password),
-            nickname=nickname,
-            cohort=cohort,
-            role='student',
-            status=1
-        )
+        user = User(username=username, password_hash=generate_password_hash(password), nickname=nickname, cohort=cohort, role='student', status=1)
         db.session.add(user)
         db.session.commit()
-
         flash('注册成功，请登录', 'success')
         return redirect(url_for('login'))
-
     return render_template('register.html')
 
-# 登录
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
-
         user = User.query.filter_by(username=username).first()
-        # 修正 2：使用正确的密码校验方式
         if user and check_password_hash(user.password_hash, password):
             session['user_id'] = user.id
             session['username'] = user.username
@@ -98,19 +92,16 @@ def login():
             session['role'] = user.role
             flash('登录成功', 'success')
             return redirect(url_for('index'))
-
         flash('用户名或密码错误', 'danger')
-
     return render_template('login.html')
 
-# 退出登录
 @app.route('/logout')
 def logout():
     session.clear()
     flash('已退出登录', 'info')
     return redirect(url_for('index'))
 
-# 添加地点推荐
+# ==================== 添加推荐 ====================
 @app.route('/add_place', methods=['GET', 'POST'])
 @login_required
 def add_place():
@@ -123,9 +114,9 @@ def add_place():
     scope = request.form.get('scope', '').strip()
     address = request.form.get('address', '').strip()
     description = request.form.get('description', '').strip()
-    reason = request.form.get('reason', '').strip()  # 修正 3
+    reason = request.form.get('reason', '').strip()
     cost_level = request.form.get('cost_level', '').strip()
-    duration_level = request.form.get('duration_level', '').strip() # 修正 4
+    duration_level = request.form.get('duration_level', '').strip()
     tags = request.form.get('tags', '').strip()
 
     if not name:
@@ -135,103 +126,114 @@ def add_place():
     cover_image_url = None
     file = request.files.get('cover_image')
     if file and file.filename:
-        if not allowed_file(file.filename):
-            flash('图片格式仅支持 jpg / jpeg / png / webp', 'danger')
-            return redirect(url_for('add_place'))
+        if allowed_file(file.filename):
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            filename = f"{uuid.uuid4().hex}.{ext}"
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            cover_image_url = f"/static/uploads/{filename}"
 
-        ext = file.filename.rsplit('.', 1)[1].lower()
-        filename = f"{uuid.uuid4().hex}.{ext}"
-        save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(save_path)
-        
-        # 数据库里存相对路径
-        cover_image_url = f"/static/uploads/{filename}" # 修正 5
-
-    place = Place(
-        name=name,
-        category_id=category_id,
-        scope=scope,
-        address=address,
-        description=description,
-        reason=reason, # 修正 6
-        cost_level=cost_level,
-        duration_level=duration_level, # 修正 7
-        tags=tags,
-        cover_image_url=cover_image_url, # 修正 8
-        author_id=session['user_id'],
-        status='pending',
-    )
+    place = Place(name=name, category_id=category_id, scope=scope, address=address, description=description, reason=reason, cover_image_url=cover_image_url, cost_level=cost_level, duration_level=duration_level, tags=tags, author_id=session['user_id'], status='pending')
     db.session.add(place)
     db.session.commit()
-
     flash('提交成功，等待审核', 'success')
     return redirect(url_for('index'))
 
-@app.errorhandler(413)
-def request_entity_too_large(error):
-    flash('图片大小不能超过 5MB', 'danger')
-    return redirect(url_for('add_place'))
-from functools import wraps
-from datetime import datetime
-
-from flask import flash, redirect, url_for, session, request, render_template
-
-
-# ============ 管理员权限装饰器 ============
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if session.get('role') != 'admin':
-            flash('无权访问', 'danger')
-            return redirect(url_for('index'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-
-# ============ 审核列表 ============
+# ==================== 管理员审核 ====================
 @app.route('/admin/review')
 @login_required
 @admin_required
 def admin_review():
-    pending_places = Place.query.filter_by(status='pending').order_by(
-        Place.created_at.asc()
-    ).all()
-    return render_template('admin_review.html', places=pending_places)
+    places = Place.query.filter_by(status='pending').order_by(Place.id.desc()).all()
+    return render_template('admin_review.html', places=places)
 
-
-# ============ 通过 ============
 @app.route('/admin/approve/<int:id>', methods=['POST'])
 @login_required
 @admin_required
 def admin_approve(id):
-    place = Place.query.get_or_404(id)
-    place.status = 'approved'
-    place.published_at = datetime.utcnow()
-    db.session.commit()
-    flash(f'已通过：{place.name}', 'success')
+    place = db.session.get(Place, id)
+    if place:
+        place.status = 'approved'
+        place.published_at = datetime.utcnow()
+        db.session.commit()
+        flash(f'已通过: {place.name}', 'success')
     return redirect(url_for('admin_review'))
 
-
-# ============ 驳回 ============
 @app.route('/admin/reject/<int:id>', methods=['POST'])
 @login_required
 @admin_required
 def admin_reject(id):
-    place = Place.query.get_or_404(id)
-    reason = request.form.get('reason', '').strip()
-    place.status = 'rejected'
-    place.reject_reason = reason
-    db.session.commit()
-    flash(f'已驳回：{place.name}' + (f'，原因：{reason}' if reason else ''), 'info')
+    place = db.session.get(Place, id)
+    if place:
+        place.status = 'rejected'
+        db.session.commit()
+        flash(f'已驳回: {place.name}', 'info')
     return redirect(url_for('admin_review'))
 
-@app.context_processor
-def inject_user():
-    return dict(current_user={
-        'id': session.get('user_id'),
-        'username': session.get('username'),
-        'nickname': session.get('nickname'),
-        'role': session.get('role')
-    } if session.get('user_id') else None)
+# ==================== 地点详情 ====================
+@app.route('/place/<int:id>')
+def place_detail(id):
+    place = db.session.get(Place, id)
+    if not place: abort(404)
+    
+    is_liked = False
+    is_favorited = False
+    if 'user_id' in session:
+        uid = session['user_id']
+        is_liked = Like.query.filter_by(user_id=uid, place_id=id).first() is not None
+        is_favorited = Favorite.query.filter_by(user_id=uid, place_id=id).first() is not None
+
+    return render_template('detail.html', place=place, is_liked=is_liked, is_favorited=is_favorited)
+
+# ==================== 点赞 ====================
+@app.route('/toggle_like/<int:id>')
+@login_required
+def toggle_like(id):
+    place = db.session.get(Place, id)
+    if not place: abort(404)
+
+    uid = session['user_id']
+    existing = Like.query.filter_by(user_id=uid, place_id=id).first()
+
+    if existing:
+        db.session.delete(existing)
+        place.like_count = max(0, (place.like_count or 0) - 1)
+        flash('已取消点赞', 'info')
+    else:
+        db.session.add(Like(user_id=uid, place_id=id))
+        place.like_count = (place.like_count or 0) + 1
+        flash('点赞成功', 'success')
+    db.session.commit()
+    return redirect(request.referrer or url_for('place_detail', id=id))
+
+# ==================== 收藏 ====================
+@app.route('/toggle_favorite/<int:id>')
+@login_required
+def toggle_favorite(id):
+    place = db.session.get(Place, id)
+    if not place: abort(404)
+
+    uid = session['user_id']
+    existing = Favorite.query.filter_by(user_id=uid, place_id=id).first()
+
+    if existing:
+        db.session.delete(existing)
+        place.favorite_count = max(0, (place.favorite_count or 0) - 1)
+        flash('已取消收藏', 'info')
+    else:
+        db.session.add(Favorite(user_id=uid, place_id=id))
+        place.favorite_count = (place.favorite_count or 0) + 1
+        flash('收藏成功', 'success')
+    db.session.commit()
+    return redirect(request.referrer or url_for('place_detail', id=id))
+
+# ==================== 我的收藏 ====================
+@app.route('/my_favorites')
+@login_required
+def my_favorites():
+    uid = session['user_id']
+    # 联合查询，只找审核通过的
+    places = db.session.query(Place).join(Favorite, Favorite.place_id == Place.id).filter(Favorite.user_id == uid, Place.status == 'approved').all()
+    return render_template('my_favorites.html', places=places)
+
 if __name__ == '__main__':
     app.run(debug=True)

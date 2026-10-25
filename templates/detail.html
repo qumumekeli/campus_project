@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ place.name }} - 旅行推荐{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="card shadow-sm border-0">
+        {% if place.cover_image_url %}
+            <img src="{{ place.cover_image_url }}" class="card-img-top" alt="{{ place.name }}"
+                 style="max-height: 480px; object-fit: cover;">
+        {% else %}
+            <div class="d-flex align-items-center justify-content-center bg-light text-muted"
+                 style="height: 300px;">
+                暂无图片
+            </div>
+        {% endif %}
+
+        <div class="card-body p-4">
+            <h1 class="card-title mb-3">{{ place.name }}</h1>
+
+            <div class="mb-3">
+                {% if place.category %}
+                    <span class="badge bg-primary me-2">分类：{{ place.category }}</span>
+                {% endif %}
+                {% if place.scope %}
+                    <span class="badge bg-info text-dark me-2">范围：{{ place.scope }}</span>
+                {% endif %}
+                {% if place.address %}
+                    <span class="badge bg-secondary me-2">📍 {{ place.address }}</span>
+                {% endif %}
+            </div>
+
+            <p class="text-muted small mb-4">
+                发布者：{{ place.author.nickname if place.author else '未知' }}
+            </p>
+
+            <h5 class="fw-bold mt-4">📍 地点描述</h5>
+            <p class="text-secondary" style="white-space: pre-wrap; line-height: 1.8;">
+                {{ place.description or '暂无描述' }}
+            </p>
+
+            <h5 class="fw-bold mt-4">💡 推荐理由</h5>
+            <p class="text-secondary" style="white-space: pre-wrap; line-height: 1.8;">
+                {{ place.reason or '暂无推荐理由' }}
+            </p>
+
+            <hr class="my-4">
+
+            <div class="d-flex align-items-center gap-3 mb-4 text-muted">
+                <span>👍 点赞：<strong class="text-dark">{{ place.like_count or 0 }}</strong></span>
+                <span>⭐ 收藏：<strong class="text-dark">{{ place.favorite_count or 0 }}</strong></span>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                {% if session.get('user_id') %}
+                    {% if is_liked %}
+                        <a href="{{ url_for('toggle_like', id=place.id) }}"
+                           class="btn btn-success">
+                           ✅ 已点赞（点击取消）
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('toggle_like', id=place.id) }}"
+                           class="btn btn-outline-success">
+                           🤍 点赞
+                        </a>
+                    {% endif %}
+
+                    {% if is_favorited %}
+                        <a href="{{ url_for('toggle_favorite', id=place.id) }}"
+                           class="btn btn-danger">
+                           ⭐ 已收藏（点击取消）
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('toggle_favorite', id=place.id) }}"
+                           class="btn btn-outline-danger">
+                           ☆ 收藏
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <a href="{{ url_for('login', next=request.path) }}"
+                       class="btn btn-outline-success">🤍 登录后点赞</a>
+                    <a href="{{ url_for('login', next=request.path) }}"
+                       class="btn btn-outline-danger">☆ 登录后收藏</a>
+                {% endif %}
+            </div>
+
+            <hr class="my-4">
+
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                ← 返回首页
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
