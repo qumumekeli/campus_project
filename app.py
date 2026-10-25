@@ -6,7 +6,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from config import Config
-from models import db, User, Category, Place, Like, Favorite
+from models import db, User, Category, Place, Like, Favorite,Comment
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -210,6 +210,9 @@ def place_detail(id):
         uid = session['user_id']
         is_liked = Like.query.filter_by(user_id=uid, place_id=id).first() is not None
         is_favorited = Favorite.query.filter_by(user_id=uid, place_id=id).first() is not None
+            # ... 原来的 place 查询和 is_liked 逻辑保留 ...
+    comments = Comment.query.filter_by(place_id=place.id).order_by(Comment.created_at.desc()).all()
+    return render_template('detail.html', place=place, is_liked=is_liked, is_favorited=is_favorited, comments=comments)
 
     return render_template('detail.html', place=place, is_liked=is_liked, is_favorited=is_favorited)
 
@@ -263,6 +266,29 @@ def my_favorites():
     # 联合查询，只找审核通过的
     places = db.session.query(Place).join(Favorite, Favorite.place_id == Place.id).filter(Favorite.user_id == uid, Place.status == 'approved').all()
     return render_template('my_favorites.html', places=places)
+@app.route('/profile')
+@login_required
+def profile():
+    # 从 session 里拿用户 id
+    uid = session.get('user_id')
+    places = Place.query.filter_by(author_id=uid).order_by(Place.created_at.desc()).all()
+    return render_template('profile.html', places=places)
+
+@app.route('/add_comment/<int:id>', methods=['POST'])
+@login_required
+def add_comment(id):
+    place = Place.query.get_or_404(id)
+    content = request.form.get('content', '').strip()
+    if content:
+        comment = Comment(
+            place_id=place.id,
+            user_id=session.get('user_id'), # 直接用 session 取
+            content=content
+        )
+        db.session.add(comment)
+        db.session.commit()
+    return redirect(url_for('place_detail', id=place.id))
+
 
 if __name__ == '__main__':
     app.run(debug=True)

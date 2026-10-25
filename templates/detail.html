@@ -91,4 +91,36 @@
         </div>
     </div>
 </div>
+<hr class="my-4">
+<div class="container mb-5">
+  <h5 class="mb-3 fw-bold">💬 评论区</h5>
+
+  {% if comments %}
+    <ul class="list-group mb-4">
+      {% for comment in comments %}
+      <li class="list-group-item">
+        <div class="d-flex justify-content-between">
+          <!-- 注意这里用 comment.user.nickname 依赖模型里的关系，如果没有，后面可能会报错 -->
+          <strong>{{ comment.user.nickname }}</strong> 
+          <small class="text-muted">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+        </div>
+        <div class="mt-1">{{ comment.content }}</div>
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted">暂无评论，快来抢沙发吧。</p>
+  {% endif %}
+
+  {% if current_user %}
+  <form method="POST" action="{{ url_for('add_comment', id=place.id) }}">
+    <div class="mb-3">
+      <textarea class="form-control" name="content" rows="3" placeholder="写下你的评论..." required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">发表评论</button>
+  </form>
+  {% else %}
+  <div class="alert alert-info">请登录后评论。</div>
+  {% endif %}
+</div>
 {% endblock %}

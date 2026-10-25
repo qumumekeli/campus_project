@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card mb-4 shadow-sm border-0">
+    <div class="card-body bg-primary text-white rounded">
+      <h4 class="card-title">👤 {{ current_user.nickname }}</h4>
+      <p class="card-text mb-0">届别：{{ current_user.cohort }} | 角色：{{ current_user.role }}</p>
+    </div>
+  </div>
+
+  <h5 class="mb-3 fw-bold">我推荐的地点</h5>
+  {% if places %}
+  <div class="table-responsive bg-white p-3 rounded shadow-sm">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>名称</th>
+          <th>提交时间</th>
+          <th>状态</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for place in places %}
+        <tr>
+          <td>
+            <a href="{{ url_for('place_detail', id=place.id) }}" class="text-decoration-none fw-bold">{{ place.name }}</a>
+          </td>
+          <td>{{ place.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>
+            {% if place.status == 'pending' %}
+              <span class="badge bg-warning text-dark">待审核</span>
+            {% elif place.status == 'approved' %}
+              <span class="badge bg-success">已通过</span>
+            {% elif place.status == 'rejected' %}
+              <span class="badge bg-danger">已驳回</span>
+              {% if place.reject_reason %}
+                <div class="text-danger small mt-1">原因：{{ place.reject_reason }}</div>
+              {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-info">你还没有推荐过地点哦，快去添加吧！</div>
+  {% endif %}
+</div>
+{% endblock %}
