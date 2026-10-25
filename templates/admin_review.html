@@ -64,13 +64,11 @@
             </form>
 
             <!-- 驳回：隐藏表单 + prompt 输入原因 -->
-            <form id="reject-form-{{ place.id }}"
-                  action="{{ url_for('admin_reject', id=place.id) }}"
-                  method="POST" class="d-inline">
-              <input type="hidden" name="reason" id="reject-reason-{{ place.id }}">
-              <button type="button" class="btn btn-sm btn-danger"
-                      onclick="rejectPlace({{ place.id }}, '{{ place.name }}')">驳回</button>
-            </form>
+            <form method="POST" action="{{ url_for('admin_reject', id=place.id) }}" class="d-inline"
+      onsubmit="var r = prompt('请输入驳回理由：'); if (r === null) return false; if (!r.trim()) { alert('必须填写驳回理由'); return false; } this.reason.value = r; return true;">
+  <input type="hidden" name="reason" value="">
+  <button type="submit" class="btn btn-sm btn-danger">驳回</button>
+</form>
           </td>
         </tr>
         {% endfor %}

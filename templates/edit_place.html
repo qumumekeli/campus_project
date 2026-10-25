@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}编辑推荐 - 校园推荐系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4 mb-5">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">重新编辑推荐：{{ place.name }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">地点名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="name" value="{{ place.name }}" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">分类 <span class="text-danger">*</span></label>
+                            <select class="form-select" name="category_id" required>
+                                {% for c in categories %}
+                                <option value="{{ c.id }}" {% if place.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">范围 <span class="text-danger">*</span></label>
+                            <select class="form-select" name="scope" required>
+                                <option value="campus" {% if place.scope == 'campus' %}selected{% endif %}>校内</option>
+                                <option value="nearby" {% if place.scope == 'nearby' %}selected{% endif %}>周边</option>
+                                <option value="city" {% if place.scope == 'city' %}selected{% endif %}>全市</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">具体地址 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="address" value="{{ place.address }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">客观描述 <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="description" rows="3" required>{{ place.description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">推荐理由 <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="reason" rows="3" required>{{ place.reason }}</textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">消费水平</label>
+                            <select class="form-select" name="cost_level">
+                                <option value="free" {% if place.cost_level == 'free' %}selected{% endif %}>免费</option>
+                                <option value="low" {% if place.cost_level == 'low' %}selected{% endif %}>低</option>
+                                <option value="medium" {% if place.cost_level == 'medium' %}selected{% endif %}>中</option>
+                                <option value="high" {% if place.cost_level == 'high' %}selected{% endif %}>高</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">适合时长</label>
+                            <select class="form-select" name="duration_level">
+                                <option value="lt30m" {% if place.duration_level == 'lt30m' %}selected{% endif %}>30分钟内</option>
+                                <option value="about1h" {% if place.duration_level == 'about1h' %}selected{% endif %}>约1小时</option>
+                                <option value="1to3h" {% if place.duration_level == '1to3h' %}selected{% endif %}>1-3小时</option>
+                                <option value="halfday" {% if place.duration_level == 'halfday' %}selected{% endif %}>半天以上</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">标签（用逗号分隔）</label>
+                        <input type="text" class="form-control" name="tags" value="{{ place.tags or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">封面图（不选则保留原图）</label>
+                        {% if place.cover_image_url %}
+                            <div class="mb-2"><img src="{{ place.cover_image_url }}" style="height: 100px;" class="rounded"></div>
+                        {% endif %}
+                        <input type="file" class="form-control" name="cover_image" accept=".jpg,.jpeg,.png,.webp">
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">提交重新审核</button>
+                        <a href="{{ url_for('profile') }}" class="btn btn-outline-secondary">取消</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -60,6 +60,7 @@ class Place(db.Model):
     tags = db.Column(db.String(255), nullable=True)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     status = db.Column(db.String(20), nullable=False, default='pending')  # pending / approved / rejected / offline
+    reject_reason = db.Column(db.String(255), nullable=True)
     is_deleted = db.Column(db.Integer, nullable=False, default=0)
     like_count = db.Column(db.Integer, default=0)
     favorite_count = db.Column(db.Integer, default=0)

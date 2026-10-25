@@ -47,7 +47,8 @@ def inject_user():
         'id': session.get('user_id'),
         'username': session.get('username'),
         'nickname': session.get('nickname'),
-        'role': session.get('role')
+        'role': session.get('role'),
+        'cohort': session.get('cohort')
     } if session.get('user_id') else None)
 
 # ==================== 首页 ====================
@@ -119,6 +120,7 @@ def login():
             session['username'] = user.username
             session['nickname'] = user.nickname
             session['role'] = user.role
+            session['cohort'] = user.cohort
             flash('登录成功', 'success')
             return redirect(url_for('index'))
         flash('用户名或密码错误', 'danger')
@@ -189,15 +191,21 @@ def admin_approve(id):
 
 @app.route('/admin/reject/<int:id>', methods=['POST'])
 @login_required
-@admin_required
+@admin_required  # 别忘了管理员校验
 def admin_reject(id):
     place = db.session.get(Place, id)
-    if place:
-        place.status = 'rejected'
-        db.session.commit()
-        flash(f'已驳回: {place.name}', 'info')
+    if not place: abort(404)
+    
+    reason = request.form.get('reason', '').strip()
+    if not reason:
+        flash('必须填写驳回理由', 'danger')
+        return redirect(url_for('admin_review'))
+        
+    place.status = 'rejected'
+    place.reject_reason = reason
+    db.session.commit()
+    flash(f'已驳回: {place.name}', 'info')
     return redirect(url_for('admin_review'))
-
 # ==================== 地点详情 ====================
 @app.route('/place/<int:id>')
 def place_detail(id):
@@ -290,7 +298,44 @@ def add_comment(id):
         db.session.add(comment)
         db.session.commit()
     return redirect(url_for('place_detail', id=place.id))
+@app.route('/edit_place/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_place(id):
+    place = db.session.get(Place, id)
+    if not place: abort(404)
+    if place.author_id != session.get('user_id'):
+        flash('无权编辑该地点', 'danger')
+        return redirect(url_for('profile'))
 
+    categories = Category.query.all()
+
+    if request.method == 'POST':
+        # 把字段全部更新
+        place.name = request.form.get('name', '').strip()
+        place.category_id = request.form.get('category_id', type=int)
+        place.scope = request.form.get('scope', '').strip()
+        place.address = request.form.get('address', '').strip()
+        place.description = request.form.get('description', '').strip()
+        place.reason = request.form.get('reason', '').strip()
+        place.cost_level = request.form.get('cost_level', '').strip()
+        place.duration_level = request.form.get('duration_level', '').strip()
+        place.tags = request.form.get('tags', '').strip()
+        
+        # 处理新图片上传（如果用户选了新图）
+        file = request.files.get('cover_image')
+        if file and file.filename and allowed_file(file.filename):
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            filename = f"{uuid.uuid4().hex}.{ext}"
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            place.cover_image_url = f"/static/uploads/{filename}"
+
+        place.status = 'pending'
+        place.reject_reason = None
+        db.session.commit()
+        flash('已重新提交，等待管理员审核', 'success')
+        return redirect(url_for('profile'))
+
+    return render_template('edit_place.html', place=place, categories=categories)
 
 if __name__ == '__main__':
     app.run(debug=True)
