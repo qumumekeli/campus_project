@@ -18,9 +18,9 @@
             <h1 class="card-title mb-3">{{ place.name }}</h1>
 
             <div class="mb-3">
-                {% if place.category %}
-                    <span class="badge bg-primary me-2">分类：{{ place.category }}</span>
-                {% endif %}
+                {% if category %}
+    <span class="badge bg-primary me-2">分类：{{ category.name }}</span>
+{% endif %}
                 {% if place.scope %}
                     <span class="badge bg-info text-dark me-2">范围：{{ place.scope }}</span>
                 {% endif %}
@@ -30,8 +30,8 @@
             </div>
 
             <p class="text-muted small mb-4">
-                发布者：{{ place.author.nickname if place.author else '未知' }}
-            </p>
+    发布者：{{ author.nickname if author else '未知' }}
+</p>
 
             <h5 class="fw-bold mt-4">📍 地点描述</h5>
             <p class="text-secondary" style="white-space: pre-wrap; line-height: 1.8;">

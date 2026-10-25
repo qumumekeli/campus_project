@@ -210,12 +210,14 @@ def place_detail(id):
         uid = session['user_id']
         is_liked = Like.query.filter_by(user_id=uid, place_id=id).first() is not None
         is_favorited = Favorite.query.filter_by(user_id=uid, place_id=id).first() is not None
-            # ... 原来的 place 查询和 is_liked 逻辑保留 ...
+
+    # 👇 新增这两行，查出作者和分类的真实名字
+    author = db.session.get(User, place.author_id)
+    category = db.session.get(Category, place.category_id)
     comments = Comment.query.filter_by(place_id=place.id).order_by(Comment.created_at.desc()).all()
-    return render_template('detail.html', place=place, is_liked=is_liked, is_favorited=is_favorited, comments=comments)
 
-    return render_template('detail.html', place=place, is_liked=is_liked, is_favorited=is_favorited)
-
+    # 👇 注意这里把 author 和 category 也传过去
+    return render_template('detail.html', place=place, is_liked=is_liked, is_favorited=is_favorited, comments=comments, author=author, category=category)
 # ==================== 点赞 ====================
 @app.route('/toggle_like/<int:id>')
 @login_required
