@@ -1,3 +1,4 @@
+from sqlalchemy import func
 import os
 import uuid
 from datetime import datetime
@@ -83,6 +84,14 @@ def index():
         query = query.order_by(Place.id.desc())
 
     places = query.all()
+    top_recommended = (
+        db.session.query(Place.name, func.count(Place.id).label('count'))
+        .filter(Place.status == 'approved')
+        .group_by(Place.name)
+        .order_by(func.count(Place.id).desc())
+        .limit(5)
+        .all()
+    )
     categories = Category.query.all()
 
     return render_template(
@@ -92,7 +101,8 @@ def index():
         keyword=keyword,
         selected_category_id=category_id,
         selected_scope=scope,
-        sort_by=sort_by
+        sort_by=sort_by,
+        top_recommended=top_recommended
     )
 
 # ==================== 登录注册 ====================

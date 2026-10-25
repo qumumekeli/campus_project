@@ -6,8 +6,27 @@
 
     <!-- 搜索与筛选栏 -->
     <form class="row g-2 align-items-center mb-4 bg-white p-3 rounded shadow-sm" method="GET" action="{{ url_for('index') }}">
-    <div class="col-12 col-md-4">
-        <input type="text" class="form-control" name="keyword" placeholder="搜索地点名称或描述..." value="{{ keyword or '' }}">
+        <div class="col-12 col-md-4 position-relative">
+        <input type="text" class="form-control" id="searchKeyword" name="keyword" autocomplete="off" 
+               placeholder="搜索地点名称或描述..." value="{{ keyword or '' }}">
+        
+        <!-- 下拉榜单，默认隐藏 -->
+        <ul class="dropdown-menu w-100 shadow" id="hotDropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 5px; z-index: 1000;">
+            <li><h6 class="dropdown-header text-danger fw-bold">🔥 校园最多人推荐 TOP 5</h6></li>
+            {% if top_recommended %}
+                {% for item in top_recommended %}
+                <li>
+                    <a class="dropdown-item d-flex justify-content-between align-items-center" 
+                       href="{{ url_for('index', keyword=item.name, category_id=selected_category_id, scope=selected_scope, sort_by=sort_by) }}">
+                        <span>{{ item.name }}</span>
+                        <span class="badge bg-danger rounded-pill">🔥 {{ item.count }} 人推荐</span>
+                    </a>
+                </li>
+                {% endfor %}
+            {% else %}
+                <li><span class="dropdown-item-text text-muted">暂无推荐数据</span></li>
+            {% endif %}
+        </ul>
     </div>
     <div class="col-6 col-md-2">
         <select class="form-select" name="category_id">
@@ -78,4 +97,22 @@
         <div class="alert alert-secondary text-center my-5">没有找到符合条件的地点</div>
     {% endif %}
 </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const input = document.getElementById('searchKeyword');
+        const dropdown = document.getElementById('hotDropdown');
+
+        // 点击输入框显示榜单
+        input.addEventListener('focus', function() {
+            dropdown.style.display = 'block';
+        });
+
+        // 点击页面其他地方隐藏榜单
+        document.addEventListener('click', function(event) {
+            if (!input.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+    });
+</script>
 {% endblock %}
