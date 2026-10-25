@@ -53,14 +53,15 @@ def inject_user():
 
 # ==================== 首页 ====================
 @app.route('/')
-
 def index():
     keyword = request.args.get('keyword', '').strip()
     category_id = request.args.get('category_id', '').strip()
     scope = request.args.get('scope', '').strip()
+    sort_by = request.args.get('sort_by', 'newest')
 
     query = Place.query.filter_by(status='approved')
 
+    # 搜索与过滤（保留你之前的完美逻辑）
     if keyword:
         like = f'%{keyword}%'
         query = query.filter(db.or_(Place.name.like(like), Place.description.like(like)))
@@ -74,7 +75,14 @@ def index():
     if scope in ('campus', 'nearby', 'city'):
         query = query.filter(Place.scope == scope)
 
-    places = query.order_by(Place.id.desc()).all()
+    # 排序逻辑（新增热度）
+    if sort_by == 'hot':
+        query = query.order_by(Place.favorite_count.desc(), Place.like_count.desc())
+    else:
+        sort_by = 'newest'
+        query = query.order_by(Place.id.desc())
+
+    places = query.all()
     categories = Category.query.all()
 
     return render_template(
@@ -83,7 +91,8 @@ def index():
         categories=categories,
         keyword=keyword,
         selected_category_id=category_id,
-        selected_scope=scope
+        selected_scope=scope,
+        sort_by=sort_by
     )
 
 # ==================== 登录注册 ====================

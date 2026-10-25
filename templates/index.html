@@ -6,31 +6,40 @@
 
     <!-- 搜索与筛选栏 -->
     <form class="row g-2 align-items-center mb-4 bg-white p-3 rounded shadow-sm" method="GET" action="{{ url_for('index') }}">
-        <div class="col-12 col-md-5">
-            <input type="text" class="form-control" name="keyword" placeholder="搜索地点名称或描述..." value="{{ keyword or '' }}">
-        </div>
-        <div class="col-6 col-md-3">
-            <select class="form-select" name="category_id">
-                <option value="">全部分类</option>
-                {% for category in categories %}
-                    <option value="{{ category.id }}" {% if selected_category_id and selected_category_id|string == category.id|string %}selected{% endif %}>
-                        {{ category.name }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-6 col-md-2">
-            <select class="form-select" name="scope">
-                <option value="">全部范围</option>
-                <option value="campus" {% if selected_scope == 'campus' %}selected{% endif %}>校内</option>
-                <option value="nearby" {% if selected_scope == 'nearby' %}selected{% endif %}>周边</option>
-                <option value="city" {% if selected_scope == 'city' %}selected{% endif %}>全市</option>
-            </select>
-        </div>
-        <div class="col-12 col-md-2 d-grid">
-            <button type="submit" class="btn btn-primary">搜索</button>
-        </div>
-    </form>
+    <div class="col-12 col-md-4">
+        <input type="text" class="form-control" name="keyword" placeholder="搜索地点名称或描述..." value="{{ keyword or '' }}">
+    </div>
+    <div class="col-6 col-md-2">
+        <select class="form-select" name="category_id">
+            <option value="">全部分类</option>
+            {% for category in categories %}
+                <option value="{{ category.id }}" {% if selected_category_id and selected_category_id|string == category.id|string %}selected{% endif %}>
+                    {{ category.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-6 col-md-2">
+        <select class="form-select" name="scope">
+            <option value="">全部范围</option>
+            <option value="campus" {% if selected_scope == 'campus' %}selected{% endif %}>校内</option>
+            <option value="nearby" {% if selected_scope == 'nearby' %}selected{% endif %}>周边</option>
+            <option value="city" {% if selected_scope == 'city' %}selected{% endif %}>全市</option>
+        </select>
+    </div>
+    
+    <!-- 新增的排序下拉框 -->
+    <div class="col-6 col-md-2">
+        <select class="form-select" name="sort_by">
+            <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>最新发布</option>
+            <option value="hot" {% if sort_by == 'hot' %}selected{% endif %}>按热度排序</option>
+        </select>
+    </div>
+    
+    <div class="col-6 col-md-2 d-grid">
+        <button type="submit" class="btn btn-primary">搜索</button>
+    </div>
+</form>
 
     <!-- 卡片列表 -->
     {% if places %}
