@@ -52,9 +52,38 @@ def inject_user():
 
 # ==================== 首页 ====================
 @app.route('/')
+
 def index():
-    places = Place.query.filter_by(status='approved').order_by(Place.id.desc()).all()
-    return render_template('index.html', places=places)
+    keyword = request.args.get('keyword', '').strip()
+    category_id = request.args.get('category_id', '').strip()
+    scope = request.args.get('scope', '').strip()
+
+    query = Place.query.filter_by(status='approved')
+
+    if keyword:
+        like = f'%{keyword}%'
+        query = query.filter(db.or_(Place.name.like(like), Place.description.like(like)))
+
+    if category_id:
+        try:
+            query = query.filter(Place.category_id == int(category_id))
+        except ValueError:
+            pass
+
+    if scope in ('campus', 'nearby', 'city'):
+        query = query.filter(Place.scope == scope)
+
+    places = query.order_by(Place.id.desc()).all()
+    categories = Category.query.all()
+
+    return render_template(
+        'index.html',
+        places=places,
+        categories=categories,
+        keyword=keyword,
+        selected_category_id=category_id,
+        selected_scope=scope
+    )
 
 # ==================== 登录注册 ====================
 @app.route('/register', methods=['GET', 'POST'])
