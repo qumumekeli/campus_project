@@ -26,7 +26,8 @@
             <a href="{{ url_for('place_detail', id=place.id) }}" class="text-decoration-none fw-bold">{{ place.name }}</a>
           </td>
           <td>{{ place.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-          <td>
+                    <td>
+            <!-- 1. 状态徽标 -->
             {% if place.status == 'pending' %}
               <span class="badge bg-warning text-dark">待审核</span>
             {% elif place.status == 'approved' %}
@@ -36,7 +37,20 @@
               {% if place.reject_reason %}
                 <div class="text-danger small fw-bold mt-1">理由：{{ place.reject_reason }}</div>
               {% endif %}
+            {% endif %}
+
+            <!-- 2. 重新编辑按钮 (仅驳回时显示) -->
+            {% if place.status == 'rejected' %}
               <a href="{{ url_for('edit_place', id=place.id) }}" class="btn btn-sm btn-outline-primary mt-1">重新编辑</a>
+            {% endif %}
+
+            <!-- 3. 删除按钮 (所有状态都有，只要没被彻底删除) -->
+            {% if place.is_deleted == 0 %}
+              <form method="POST" action="{{ url_for('place_delete', id=place.id) }}" class="d-inline mt-1"
+                    onsubmit="if (!confirm('确定要删除这个地点吗？')) return false;">
+                <input type="hidden" name="reason" value="作者自行删除">
+                <button type="submit" class="btn btn-sm btn-outline-danger">删除</button>
+              </form>
             {% endif %}
           </td>
         </tr>

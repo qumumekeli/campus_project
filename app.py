@@ -356,5 +356,33 @@ def edit_place(id):
 
     return render_template('edit_place.html', place=place, categories=categories)
 
+@app.route('/place/delete/<int:id>', methods=['POST'])
+@login_required
+def place_delete(id):
+    place = db.session.get(Place, id)
+    if not place: abort(404)
+
+    # 判断权限：作者本人或管理员
+    if place.author_id != session.get('user_id') and session.get('role') != 'admin':
+        flash('无权操作', 'danger')
+        return redirect(url_for('index'))
+
+    reason = request.form.get('reason', '').strip() or '作者自行删除'
+
+    place.is_deleted = 1
+    place.status = 'offline'
+    place.reject_reason = reason
+    db.session.commit()
+    
+    flash('地点已删除', 'info')
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/admin/manage')
+@login_required
+@admin_required
+def admin_manage():
+    places = Place.query.filter_by(status='approved', is_deleted=0).order_by(Place.id.desc()).all()
+    return render_template('admin_manage.html', places=places)
+
 if __name__ == '__main__':
     app.run(debug=True)
