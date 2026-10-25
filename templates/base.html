@@ -26,13 +26,18 @@
 
         <div class="collapse navbar-collapse" id="navbarNav">
             <!-- 左侧菜单 -->
-            <ul class="navbar-nav me-auto">
+                        <ul class="navbar-nav me-auto">
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('index') }}">首页</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('add_place') }}">添加推荐</a>
                 </li>
+                {% if current_user and current_user.role == 'admin' %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('admin_review') }}">审核后台</a>
+                </li>
+                {% endif %}
             </ul>
 
             <!-- 右侧：登录状态 -->

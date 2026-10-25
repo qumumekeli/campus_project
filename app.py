@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import uuid
 from functools import wraps
@@ -7,7 +8,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from config import Config
 from models import db, User, Category, Place
-
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get('role') != 'admin':
+            flash('你没有权限访问该页面', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
 app = Flask(__name__)
 app.config.from_object(Config)
 
@@ -163,6 +171,67 @@ def add_place():
 def request_entity_too_large(error):
     flash('图片大小不能超过 5MB', 'danger')
     return redirect(url_for('add_place'))
+from functools import wraps
+from datetime import datetime
 
+from flask import flash, redirect, url_for, session, request, render_template
+
+
+# ============ 管理员权限装饰器 ============
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get('role') != 'admin':
+            flash('无权访问', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+# ============ 审核列表 ============
+@app.route('/admin/review')
+@login_required
+@admin_required
+def admin_review():
+    pending_places = Place.query.filter_by(status='pending').order_by(
+        Place.created_at.asc()
+    ).all()
+    return render_template('admin_review.html', places=pending_places)
+
+
+# ============ 通过 ============
+@app.route('/admin/approve/<int:id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_approve(id):
+    place = Place.query.get_or_404(id)
+    place.status = 'approved'
+    place.published_at = datetime.utcnow()
+    db.session.commit()
+    flash(f'已通过：{place.name}', 'success')
+    return redirect(url_for('admin_review'))
+
+
+# ============ 驳回 ============
+@app.route('/admin/reject/<int:id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_reject(id):
+    place = Place.query.get_or_404(id)
+    reason = request.form.get('reason', '').strip()
+    place.status = 'rejected'
+    place.reject_reason = reason
+    db.session.commit()
+    flash(f'已驳回：{place.name}' + (f'，原因：{reason}' if reason else ''), 'info')
+    return redirect(url_for('admin_review'))
+
+@app.context_processor
+def inject_user():
+    return dict(current_user={
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'nickname': session.get('nickname'),
+        'role': session.get('role')
+    } if session.get('user_id') else None)
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}审核后台{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>待审核地点</h2>
+    <span class="badge bg-secondary">共 {{ places|length }} 条</span>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {% if places %}
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th style="width: 100px;">图片</th>
+          <th>名称</th>
+          <th>提交人</th>
+          <th>描述</th>
+          <th>分类</th>
+          <th>提交时间</th>
+          <th style="width: 200px;">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for place in places %}
+        <tr>
+          <td>
+            {% if place.cover_image_url %}
+              <img src="{{ place.cover_image_url }}" alt="{{ place.name }}"
+                   class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+            {% else %}
+              <span class="text-muted">无图片</span>
+            {% endif %}
+          </td>
+          <td>{{ place.name }}</td>
+          <td>
+            {% if place.author %}
+              {{ place.author.nickname or place.author.username }}
+            {% else %}
+              未知
+            {% endif %}
+          </td>
+          <td style="max-width: 300px;">{{ place.description or '（无描述）' }}</td>
+          <td>{{ place.category.name if place.category else '未分类' }}</td>
+          <td>{{ place.created_at.strftime('%Y-%m-%d %H:%M') if place.created_at else '-' }}</td>
+          <td>
+            <!-- 通过 -->
+            <form action="{{ url_for('admin_approve', id=place.id) }}" method="POST" class="d-inline">
+              <button type="submit" class="btn btn-sm btn-success"
+                      onclick="return confirm('确定通过「{{ place.name }}」吗？');">通过</button>
+            </form>
+
+            <!-- 驳回：隐藏表单 + prompt 输入原因 -->
+            <form id="reject-form-{{ place.id }}"
+                  action="{{ url_for('admin_reject', id=place.id) }}"
+                  method="POST" class="d-inline">
+              <input type="hidden" name="reason" id="reject-reason-{{ place.id }}">
+              <button type="button" class="btn btn-sm btn-danger"
+                      onclick="rejectPlace({{ place.id }}, '{{ place.name }}')">驳回</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-info">当前没有待审核的地点。</div>
+  {% endif %}
+</div>
+
+<script>
+function rejectPlace(placeId, placeName) {
+  var reason = prompt('请输入驳回「' + placeName + '」的原因：');
+  if (reason === null) {
+    return;
+  }
+  if (reason.trim() === '') {
+    alert('驳回原因不能为空');
+    return;
+  }
+  document.getElementById('reject-reason-' + placeId).value = reason.trim();
+  document.getElementById('reject-form-' + placeId).submit();
+}
+</script>
+{% endblock %}
