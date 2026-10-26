@@ -241,8 +241,7 @@ def place_detail(id):
     # 👇 新增这两行，查出作者和分类的真实名字
     author = db.session.get(User, place.author_id)
     category = db.session.get(Category, place.category_id)
-    comments = Comment.query.filter_by(place_id=place.id).order_by(Comment.created_at.desc()).all()
-
+    comments = Comment.query.filter_by(place_id=place.id, parent_id=None).order_by(Comment.created_at.desc()).all()
     # 👇 注意这里把 author 和 category 也传过去
     return render_template('detail.html', place=place, is_liked=is_liked, is_favorited=is_favorited, comments=comments, author=author, category=category)
 # ==================== 点赞 ====================
@@ -308,11 +307,14 @@ def profile():
 def add_comment(id):
     place = Place.query.get_or_404(id)
     content = request.form.get('content', '').strip()
+    parent_id = request.form.get('parent_id', type=int)
+
     if content:
         comment = Comment(
             place_id=place.id,
-            user_id=session.get('user_id'), # 直接用 session 取
-            content=content
+            user_id=session.get('user_id'), # 改用 session 获取
+            content=content,
+            parent_id=parent_id if parent_id else None
         )
         db.session.add(comment)
         db.session.commit()

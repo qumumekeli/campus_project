@@ -100,11 +100,45 @@
       {% for comment in comments %}
       <li class="list-group-item">
         <div class="d-flex justify-content-between">
-          <!-- 注意这里用 comment.user.nickname 依赖模型里的关系，如果没有，后面可能会报错 -->
-          <strong>{{ comment.user.nickname }}</strong> 
+          <strong>{{ comment.user.nickname }}</strong>
           <small class="text-muted">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
         </div>
         <div class="mt-1">{{ comment.content }}</div>
+
+        {% if current_user %}
+        <button class="btn btn-sm btn-link p-0 mt-1 text-decoration-none" type="button" onclick="toggleReply({{ comment.id }})">回复</button>
+        {% endif %}
+
+        <!-- 子回复列表 -->
+        {% if comment.replies.count() > 0 %}
+        <ul class="list-group mt-2">
+          {% for reply in comment.replies.order_by('created_at') %}
+          <li class="list-group-item bg-light ms-4">
+            <div class="d-flex justify-content-between">
+              <strong>{{ reply.user.nickname }}</strong>
+              <small class="text-muted">{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+            </div>
+            <div class="mt-1">{{ reply.content }}</div>
+
+            {% if current_user %}
+            <!-- 注意：回复子回复时，parent_id 依然是顶级评论的 id -->
+            <button class="btn btn-sm btn-link p-0 mt-1 text-decoration-none" type="button" onclick="toggleReply({{ comment.id }})">回复</button>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+
+        <!-- 隐藏的回复表单 -->
+        {% if current_user %}
+        <form method="POST" action="{{ url_for('add_comment', id=place.id) }}" id="reply-form-{{ comment.id }}" class="mt-2" style="display:none;">
+          <input type="hidden" name="parent_id" value="{{ comment.id }}">
+          <div class="input-group">
+            <input type="text" class="form-control" name="content" placeholder="回复 {{ comment.user.nickname }}..." required>
+            <button type="submit" class="btn btn-outline-primary">发送</button>
+          </div>
+        </form>
+        {% endif %}
       </li>
       {% endfor %}
     </ul>
@@ -112,6 +146,7 @@
     <p class="text-muted">暂无评论，快来抢沙发吧。</p>
   {% endif %}
 
+  <!-- 主表单：发表顶级评论 -->
   {% if current_user %}
   <form method="POST" action="{{ url_for('add_comment', id=place.id) }}">
     <div class="mb-3">
@@ -123,4 +158,13 @@
   <div class="alert alert-info">请登录后评论。</div>
   {% endif %}
 </div>
+
+<script>
+function toggleReply(commentId) {
+  var f = document.getElementById('reply-form-' + commentId);
+  if (f) {
+    f.style.display = (f.style.display === 'none') ? 'block' : 'none';
+  }
+}
+</script>
 {% endblock %}

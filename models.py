@@ -81,6 +81,9 @@ class Comment(db.Model):
     status = db.Column(db.Integer, nullable=False, default=1)  # 1正常 0隐藏
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    parent_id = db.Column(db.Integer, db.ForeignKey('comments.id'), nullable=True)
+    replies = db.relationship('Comment', backref=db.backref('parent', remote_side=[id]), lazy='dynamic')
+
     def __repr__(self):
         return f'<Comment {self.id}>'
 
