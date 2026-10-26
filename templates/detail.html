@@ -121,8 +121,8 @@
             <div class="mt-1">{{ reply.content }}</div>
 
             {% if current_user %}
-            <!-- 注意：回复子回复时，parent_id 依然是顶级评论的 id -->
-            <button class="btn btn-sm btn-link p-0 mt-1 text-decoration-none" type="button" onclick="toggleReply({{ comment.id }})">回复</button>
+            <!-- 回复楼中楼，调用带参数的新 JS 函数 -->
+            <button class="btn btn-sm btn-link p-0 mt-1 text-decoration-none" type="button" onclick="toggleReplyTo({{ comment.id }}, '{{ reply.user.nickname }}')">回复</button>
             {% endif %}
           </li>
           {% endfor %}
@@ -163,7 +163,22 @@
 function toggleReply(commentId) {
   var f = document.getElementById('reply-form-' + commentId);
   if (f) {
-    f.style.display = (f.style.display === 'none') ? 'block' : 'none';
+    if (f.style.display === 'none' || f.style.display === '') {
+      f.style.display = 'block';
+      f.querySelector('input[name="content"]').value = ''; 
+    } else {
+      f.style.display = 'none';
+    }
+  }
+}
+
+function toggleReplyTo(commentId, nickname) {
+  var f = document.getElementById('reply-form-' + commentId);
+  if (f) {
+    f.style.display = 'block';
+    var input = f.querySelector('input[name="content"]');
+    input.value = '@' + nickname + ' '; 
+    input.focus(); 
   }
 }
 </script>
