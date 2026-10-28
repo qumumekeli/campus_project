@@ -5,8 +5,8 @@
 <div class="container my-4">
     <div class="card shadow-sm border-0">
         {% if place.cover_image_url %}
-            <img src="{{ place.cover_image_url }}" class="card-img-top" alt="{{ place.name }}"
-                 style="max-height: 480px; object-fit: cover;">
+            <img src="{{ place.cover_image_url }}" class="card-img-top bg-light" alt="{{ place.name }}"
+                 style="max-height: 480px; object-fit: contain;">
         {% else %}
             <div class="d-flex align-items-center justify-content-center bg-light text-muted"
                  style="height: 300px;">
@@ -182,4 +182,4 @@ function toggleReplyTo(commentId, nickname) {
   }
 }
 </script>
-{% endblock %}
+{% endblock %} 

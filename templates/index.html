@@ -67,7 +67,7 @@
                 <div class="col">
                     <div class="card h-100 shadow-sm border-0">
                         {% if place.cover_image_url %}
-                            <img src="{{ place.cover_image_url }}" class="card-img-top" alt="{{ place.name }}" style="height:180px; object-fit:cover;">
+                            <img src="{{ place.cover_image_url }}" class="card-img-top bg-light" alt="{{ place.name }}" style="height:180px; object-fit:contain;">
                         {% else %}
                             <div class="d-flex align-items-center justify-content-center bg-light text-muted" style="height:180px;">暂无图片</div>
                         {% endif %}
